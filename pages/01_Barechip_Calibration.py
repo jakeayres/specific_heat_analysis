@@ -111,7 +111,7 @@ def main():
         axes[0].scatter(calibration['temperature'], calibration['resistance'], color=colors, marker='.')
         axes[1].scatter(calibration['temperature'], calibration['resistance'], color=colors, marker='.')
 
-        cheb_fit_R_to_T, cheb_fit_T_to_R = fit_chebyshev_polynomials(calibration, degree=3)
+        cheb_fit_R_to_T, cheb_fit_T_to_R = fit_chebyshev_polynomials(calibration, degree=5)
         x = np.linspace(calibration['temperature'].min(), calibration['temperature'].max(), 50)
         axes[0].plot(x, temperature_to_resistance(x, cheb_fit_T_to_R), 'k--', linewidth=0.5)
         axes[1].plot(x, temperature_to_resistance(x, cheb_fit_T_to_R), 'k--', linewidth=0.5)
