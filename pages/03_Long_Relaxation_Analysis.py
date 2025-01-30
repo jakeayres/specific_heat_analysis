@@ -7,13 +7,29 @@ import scipy
 from src.chebychev_fitting import fit_chebyshev_polynomials, resistance_to_temperature, temperature_to_resistance
 
 
+def convert_df(df):
+   return df.to_csv(index=False).encode('utf-8')
+
+
+def order_dataframes(dfs):
+    """
+    Orders dataframes [warming +, cooling +, warming -, cooling -]
+    """
+    means = [df['voltage'].mean() for df in dfs]
+    sorted_indices = sorted(range(len(means)), key=lambda i: means[i], reverse=True)
+    custom_order = [sorted_indices[0], sorted_indices[1], sorted_indices[3], sorted_indices[2]]
+    return [dfs[i] for i in custom_order]
+
+
+
 def get_files():
     try:
         st.divider()
         st.header('Upload raw data')
-        filepaths = st.file_uploader("Select a datafile", accept_multiple_files=True)[::-1]
+        filepaths = st.file_uploader("Select datafiles", accept_multiple_files=True)
         if len(filepaths) > 0:
             dfs = [pd.read_csv(filepath) for filepath in filepaths]
+            dfs = order_dataframes(dfs)
             st.success(f'{len(filepaths)} Uploaded')
             fig, ax = plt.subplots(1, 4, figsize=(10, 3))
             ax[0].set_ylabel('Voltage (V)')
@@ -51,6 +67,9 @@ def get_calibration():
             fig, ax = plt.subplots(1, 1, figsize=(10, 3))
             ax.plot(calibration['temperature'], calibration['resistance'], '.')
             st.pyplot(fig)
+        else:
+            st.warning('Upload calibration to perform analysis')
+            return None
     except Exception as e:
         st.error(e)
         raise e
@@ -122,8 +141,8 @@ def compute_temperature_derivative(data, window):
 
 def compute_heat_capacity(data, temperature_window=0.1, ignore_ends=2):
     try:
-        min_temperature = data[["warming_temperature", "cooling_temperature"]].min().min()
-        max_temperature = data[["warming_temperature", "cooling_temperature"]].max().max()
+        min_temperature = data[["warming_temperature", "cooling_temperature"]].min().max()
+        max_temperature = data[["warming_temperature", "cooling_temperature"]].max().min()
         temperatures = np.arange(min_temperature, max_temperature, temperature_window)
         temperatures = temperatures[ignore_ends:-ignore_ends]
 
@@ -236,16 +255,49 @@ def main():
         ignore_ends = st.number_input('Ignore end temperatures', value=2, step=1)
 
         # Compute heat capacity
-        cp = compute_heat_capacity(averaged, temperature_window=temperature_window)
-        axes[0].plot(cp['temperature'], cp['warming_derivatives'], '.')
-        axes[0].plot(cp['temperature'], cp['cooling_derivatives'], '.')
-        axes[1].plot(cp['temperature'], cp['heat_capacity'], '.')
+        cp_data = compute_heat_capacity(averaged, temperature_window=temperature_window)
+        axes[0].plot(cp_data['temperature'], cp_data['warming_derivatives'], '.')
+        axes[0].plot(cp_data['temperature'], cp_data['cooling_derivatives'], '.')
+        axes[1].plot(cp_data['temperature'], cp_data['heat_capacity'], '.')
         axes[0].set_xlabel('Temperature (K)')
         axes[0].set_ylabel('dT/dt (K/s)')
         axes[1].set_xlabel('Temperature (K)')
         axes[1].set_xlabel('Temperature (K)')
         axes[1].set_ylabel('Heat Capacity (J/K)')
         st.pyplot(fig)
+
+
+        try:
+            st.divider()
+            st.title('Save Data')
+            cols = st.columns(2)
+            with cols[0]:
+                st.subheader('Save to new file')
+                cp_data['run'] = 1
+                st.download_button(
+                   "Save Data",
+                   convert_df(cp_data),
+                   mime="text/csv",
+                   key='download-csv',
+                   type="primary"
+                )
+            with cols[1]:
+                st.subheader('Append to existing file')
+                existing_filename = st.file_uploader("Select a datafile")
+                if st.button('Append data', type='primary'):
+                    existing_df = pd.read_csv(existing_filename)
+                    new_run_value = existing_df['run'].max() + 1 if 'run' in existing_df else 1
+                    cp_data['run'] = new_run_value   
+                    combined_df = pd.concat([existing_df, cp_data], ignore_index=True)
+                    combined_df.to_csv(existing_filename, index=False)
+                    st.success(f"Data has been successfully appended to {existing_filename.name}")
+                else:
+                    st.warning('Select file to append data to')
+
+
+        except Exception as e:
+            st.error(e)
+            return 0
 
 
     except Exception as e:
