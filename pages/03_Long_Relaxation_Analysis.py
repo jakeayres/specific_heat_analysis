@@ -86,8 +86,8 @@ def compute_resistances(
         time = positive_warming['time']
         warming_voltage = (positive_warming['voltage']-negative_warming['voltage'])/2
         cooling_voltage = (positive_cooling['voltage']-negative_cooling['voltage'])/2
-        warming_resistance = (warming_voltage/positive_warming['gain'])/(negative_warming['current'])
-        cooling_resistance = (cooling_voltage/positive_cooling['gain'])/(negative_cooling['current'])
+        warming_resistance = np.abs((warming_voltage/positive_warming['gain'])/(negative_warming['current']))
+        cooling_resistance = np.abs((cooling_voltage/positive_cooling['gain'])/(negative_cooling['current']))
     except Exception as e:
         st.error(e)
         raise e
@@ -113,26 +113,26 @@ def compute_temperature(data, calibration):
     return data
 
 
-def perform_filtering(data, window):
+def perform_filtering(data, window_warming, window_cooling):
     try:
         time_step = data['time'].diff().mean()
         data['warming_temperature'] = scipy.signal.savgol_filter(
-            data['warming_temperature'], window, polyorder=2, deriv=0, delta=time_step, mode='nearest')
+            data['warming_temperature'], window_warming, polyorder=2, deriv=0, delta=time_step, mode='nearest')
         data['cooling_temperature'] = scipy.signal.savgol_filter(
-            data['cooling_temperature'], window, polyorder=2, deriv=0, delta=time_step, mode='nearest')
+            data['cooling_temperature'], window_cooling, polyorder=2, deriv=0, delta=time_step, mode='nearest')
     except Exception as e:
         st.error(e)
         raise e
     return data
 
 
-def compute_temperature_derivative(data, window):
+def compute_temperature_derivative(data, window_warming, window_cooling):
     try:
         time_step = data['time'].diff().mean()
         data['warming_derivative'] = scipy.signal.savgol_filter(
-            data['warming_temperature'], window, polyorder=2, deriv=1, delta=time_step, mode='nearest')
+            data['warming_temperature'], window_warming, polyorder=2, deriv=1, delta=time_step, mode='nearest')
         data['cooling_derivative'] = scipy.signal.savgol_filter(
-            data['cooling_temperature'], window, polyorder=2, deriv=1, delta=time_step, mode='nearest')
+            data['cooling_temperature'], window_cooling, polyorder=2, deriv=1, delta=time_step, mode='nearest')
     except Exception as e:
         st.error(e)
         raise e
@@ -212,8 +212,8 @@ def main():
 
         st.subheader('Filtering')
         skip_rows = st.number_input('Skip starting rows', value=0, min_value=0, max_value=1000, step=1)
-        window_size = st.number_input('Savgol filter width', value=100, step=1)
-
+        window_warming = st.number_input('Savgol filter width warming', value=100, step=1)
+        window_cooling = st.number_input('Savgol filter width cooling', value=100, step=1)
 
         # Make figure
         fig, axes = plt.subplots(1, 2, figsize=(10, 4))
@@ -222,36 +222,48 @@ def main():
         averaged = compute_resistances(C0_SR_PR, C0_SR_PF, C0_SR_NR, C0_SR_NF)
         averaged = averaged.iloc[skip_rows:]
 
+
+
         # Compute temperature from resistance
         averaged = compute_temperature(averaged, calibration)
 
+        st.write('From warming temperature: Start T ~', np.min(averaged['warming_temperature']), 'End T ~', np.max(averaged['warming_temperature']))
+        st.write('Change in T ~', ((np.max(averaged['warming_temperature']) - np.min(averaged['warming_temperature']))/np.min(averaged['warming_temperature']))*100, "%")
+        if  ((np.max(averaged['warming_temperature']) - np.min(averaged['warming_temperature']))/np.min(averaged['warming_temperature']))*100 < 30:
+            st.write('OK: Change in T is within 30% of base temperature, acceptable T range')
+        else:
+            st.write('NO: Change in T is NOT within 30% of base temperature, CHANGE CURRENT')
+
         axes[0].set_xlabel('Time (s)')
         axes[0].set_ylabel('Resistance (Ohms)')
-        axes[0].plot(averaged['time'], averaged['warming_resistance'])
-        axes[0].plot(averaged['time'], averaged['cooling_resistance'])
+        axes[0].plot(averaged['time'], averaged['warming_resistance'], label='Warming', c='red')
+        axes[0].plot(averaged['time'], averaged['cooling_resistance'], label='Cooling', c='blue')
+        axes[0].legend()
 
         axes[1].set_xlabel('Time (s)')
         axes[1].set_ylabel('Temperature (K)')
-        axes[1].plot(averaged['time'], averaged['warming_temperature'])
-        axes[1].plot(averaged['time'], averaged['cooling_temperature'])
+        axes[1].plot(averaged['time'], averaged['warming_temperature'], label='Warming', c='red')
+        axes[1].plot(averaged['time'], averaged['cooling_temperature'], label='Cooling', c='blue')
+        axes[1].legend()
 
         # Perform filtering
-        averaged = perform_filtering(averaged, window=window_size)
-        axes[1].plot(averaged['time'], averaged['warming_temperature'], 'k-', linewidth=0.75)
-        axes[1].plot(averaged['time'], averaged['cooling_temperature'], 'k-', linewidth=0.75)
+        averaged = perform_filtering(averaged, window_warming=window_warming, window_cooling=window_cooling)
+        axes[1].plot(averaged['time'], averaged['warming_temperature'], 'k-', linewidth=0.75, c='black')
+        axes[1].plot(averaged['time'], averaged['cooling_temperature'], 'k-', linewidth=0.75, c='black')
 
         st.pyplot(fig)
 
         # Compute derivatives
-        averaged = compute_temperature_derivative(averaged, window=window_size)
+        averaged = compute_temperature_derivative(averaged, window_warming=window_warming, window_cooling=window_cooling)
 
         fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-        axes[0].plot(averaged['warming_temperature'], averaged['warming_derivative'], '-', linewidth=0.75)
-        axes[0].plot(averaged['cooling_temperature'], averaged['cooling_derivative'], '-', linewidth=0.75)
+        axes[0].plot(averaged['warming_temperature'], averaged['warming_derivative'], '-', linewidth=0.75, c='red')
+        axes[0].plot(averaged['cooling_temperature'], averaged['cooling_derivative'], '-', linewidth=0.75, c='blue')
+
 
 
         st.subheader('Temperature interpolation')
-        temperature_window = st.number_input('Temperature interpolation window', value=0.1, step=0.0001)
+        temperature_window = st.number_input('Temperature interpolation window', value=0.02, step=0.0001)
         ignore_ends = st.number_input('Ignore end temperatures', value=2, step=1)
 
         # Compute heat capacity
