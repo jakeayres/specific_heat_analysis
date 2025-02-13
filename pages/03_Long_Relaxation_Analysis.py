@@ -62,8 +62,17 @@ def get_calibration():
         st.divider()
         st.header('Upload barechip calibration')
         filepath = st.file_uploader("Select a barechip calibration")
+
         if filepath is not None:
+            st.info('Using selected calibration')
             calibration = pd.read_csv(filepath)
+            st.session_state['barechip_calibration'] = calibration
+            fig, ax = plt.subplots(1, 1, figsize=(10, 3))
+            ax.plot(calibration['temperature'], calibration['resistance'], '.')
+            st.pyplot(fig)
+        elif st.session_state['barechip_calibration'] is not None:
+            st.info('Getting last used calibration')
+            calibration = st.session_state['barechip_calibration']
             fig, ax = plt.subplots(1, 1, figsize=(10, 3))
             ax.plot(calibration['temperature'], calibration['resistance'], '.')
             st.pyplot(fig)
@@ -198,6 +207,27 @@ def main():
         dfs = get_files()
 
         calibration = get_calibration()
+
+        try:
+            cheb_fit_R_to_T, cheb_fit_T_to_R = fit_chebyshev_polynomials(calibration, degree=5)
+            columns = st.columns(2, gap='large')
+
+            with columns[0]:
+                st.subheader('T to R')
+                user_temperature = st.number_input('Temperature')
+                if st.button('Convert T2R'):
+                    st.write(temperature_to_resistance(user_temperature, cheb_fit_T_to_R))
+
+            with columns[1]:
+                st.subheader('R to T')
+                user_resistance = st.number_input('Resistance')
+                if st.button('Convert R2T'):
+                    st.write(resistance_to_temperature(user_resistance, cheb_fit_R_to_T))
+
+
+        except Exception as e:
+            st.error(e)
+            return 0
 
         C0_SR_PR = dfs[0] 
         C0_SR_PF = dfs[1]
