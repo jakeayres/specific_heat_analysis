@@ -43,9 +43,9 @@ def main():
     try:
         st.title('Addenda Subtraction')
         st.write('Take addenda and sample C(T) data and perform the background subtraction.')
-        st.code('Input 1: Addenda heat capacity vs temperature (multiple files)', language=None, wrap_lines=True)
-        st.code('Input 2: Addenda + Sample heat capacity vs temperature (multiple files allowed)', language=None, wrap_lines=True)
-        st.code('Outputs: Sample heat capacity vs temperature (single averaged file allowed)', language=None, wrap_lines=True)
+        st.info('Input 1: Addenda heat capacity vs temperature (multiple files allowed)')
+        st.info('Input 2: Addenda + Sample heat capacity vs temperature (multiple files allowed)')
+        st.info('Outputs: Sample heat capacity vs temperature (single averaged file)')
 
 
         cols = st.columns(2)

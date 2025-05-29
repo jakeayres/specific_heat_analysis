@@ -365,8 +365,8 @@ def main():
     try:
         st.title('Long Relaxation Analysis')
         st.write('Analysis tool for obtaining the temperature dependent specific heat.')
-        st.code('Inputs: Voltage vs time during relaxation sweeps.', language=None, wrap_lines=True)
-        st.code('Outputs: Heat capacity vs temperature', language=None, wrap_lines=True)
+        st.info('Inputs: Voltage vs time during relaxation sweeps.')
+        st.info('Outputs: Heat capacity vs temperature')
     except Exception as e:
         st.error(e)
 

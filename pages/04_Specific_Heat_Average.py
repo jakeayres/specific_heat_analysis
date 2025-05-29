@@ -46,8 +46,8 @@ def main():
     try:
         st.title('Heat Capacity Averaging')
         st.write('Average the computed specific heat for each sweep.')
-        st.code('Inputs: Heat capacity vs temperature (multiple files)', language=None, wrap_lines=True)
-        st.code('Outputs: Heat capacity vs temperature (single averaged file)', language=None, wrap_lines=True)
+        st.info('Inputs: Heat capacity vs temperature (multiple files)')
+        st.info('Outputs: Heat capacity vs temperature (single averaged file)')
 
         try:
             dfs = get_files()
