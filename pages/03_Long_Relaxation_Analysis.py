@@ -146,6 +146,7 @@ def group_files_by_run_and_temperature(temperatures, filenames, dfs):
         return temperature_groups
 
     except Exception as e:
+        st.error("Error in: group_files_by_run_and_temperature()")
         st.error(e)
         raise e
 
@@ -178,8 +179,8 @@ def process_and_filter_sweeps(temperature_groups, calibration):
                     first_index = (averaged['cooling_resistance'] < warming_end_resistance).idxmax() + 10
 
                     skip_rows = st.number_input('Skip starting rows', value=first_index, min_value=0, max_value=1000, step=1, key=f'{temperature}_{i}_skip_rows_input')
-                    window_warming = st.number_input('Savgol filter width warming', value=100, step=1, key=f'{temperature}_{i}_warming_window_input')
-                    window_cooling = st.number_input('Savgol filter width cooling', value=100, step=1, key=f'{temperature}_{i}_cooling_windo_input')
+                    window_warming = st.number_input('Savgol filter width warming', value=40, step=1, key=f'{temperature}_{i}_warming_window_input')
+                    window_cooling = st.number_input('Savgol filter width cooling', value=120, step=1, key=f'{temperature}_{i}_cooling_windo_input')
 
                 with cols[1]:
 
@@ -458,10 +459,20 @@ def main():
                     final_axes.set_xlabel('Temperature (K)')
                     final_axes.set_ylabel('Heat Capacity (J/K)')
 
+
+
                     fig.tight_layout()
                     st.pyplot(fig)
 
         st.pyplot(final_fig)
+
+        deltaT = (cp_data['temperature'][len(cp_data['temperature']) -1] - cp_data['temperature'][0])
+        percentChangeinT = 100*(deltaT/cp_data['temperature'][len(cp_data['temperature']) -1])
+        st.write('Delta T =', 100*(deltaT/cp_data['temperature'][len(cp_data['temperature']) -1]), '%')
+        if percentChangeinT < 25:
+            st.write("Acceptable Delta T range (<25%)")
+        else:
+            st.write("Bad Delta T range (>25%), try different currents!")
 
     except Exception as e:
         st.error(e)
@@ -470,12 +481,14 @@ def main():
 
     try:
         st.divider()
+
         st.title('Save Data')
         
         if len(final_dataframes) > 1:
             data = pd.concat(final_dataframes)
         else:
-            data = final_dataframes
+            data = (final_dataframes)
+            st.write("add more files to avg over!")
 
         st.download_button(
             "Save All Data",

@@ -70,8 +70,19 @@ def main():
             total_df = bin_dataframe(total_df, bin_width)
 
             ax.plot(total_df['temperature'], total_df['heat_capacity'], 'k.', markersize=3.0)
-
             st.pyplot(fig)
+
+            specific_heat = pd.DataFrame({'temperature': total_df['temperature'], 'heat_capacity': total_df['heat_capacity']})
+
+            st.download_button(
+            "Save All Data",
+            convert_df(specific_heat),
+            mime="text/csv",
+            key='download-csv',
+            type="primary"
+            )
+
+
         except Exception as e:
             st.error('Failed to plot')
             st.error(e)
@@ -79,6 +90,11 @@ def main():
     except Exception as e:
         st.error(e)
         raise(e)
+
+
+    except Exception as e:
+        st.error(e)
+        return 0
 
 
 if __name__ == "__main__":
