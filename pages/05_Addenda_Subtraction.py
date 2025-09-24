@@ -47,6 +47,13 @@ def main():
         st.info('Input 2: Addenda + Sample heat capacity vs temperature (multiple files allowed)')
         st.info('Outputs: Sample heat capacity vs temperature (single averaged file)')
 
+        st.write("""
+            Assume the addenda is a smooth funtion of temperature that can be well approximated by a polynomial.
+            Assume that the sample heat capacity is **not** a smooth function of temperature and might contain
+            features. Don't attempt to fit to the sample data here. Fit the addenda to a polynomial and interpolate to subtract 
+            it from the actual sample data. Noise in the sample data will therefore appear on the result.
+        """)
+
 
         cols = st.columns(2)
 
@@ -54,6 +61,7 @@ def main():
 
             try:
                 addenda_dfs = get_addenda_files()
+                addenda_data = pd.concat(addenda_dfs)
             except Exception as e:
                 st.error('Could not get files')
                 st.error(e)
@@ -63,13 +71,14 @@ def main():
 
             try:
                 sample_dfs = get_sample_files()
+                sample_data = pd.concat(sample_dfs)
             except Exception as e:
                 st.error('Could not get files')
                 st.error(e)
-
+        
 
         fig, ax = plt.subplots()
-        
+
         try:
             if addenda_dfs is not None:
                 for df in addenda_dfs:
@@ -78,7 +87,6 @@ def main():
             st.error('Failed to plot addenda data')
             st.error(e)
 
-
         try:
             if sample_dfs is not None:
                 for df in sample_dfs:
@@ -86,8 +94,6 @@ def main():
         except Exception as e:
             st.error('Failed to plot sample data')
             st.error(e)
-
-
 
         st.pyplot(fig)
 
