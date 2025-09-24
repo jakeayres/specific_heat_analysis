@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def read_silver_reference():
-    PATH = 'example_data/silver/silver.data'
+    PATH = 'example_data/reference_silver/silver.data'
     df = pd.read_csv(PATH, sep='\t', names=['temperature', 'specific_heat', 'H', 'G', 'I', 'J', 'L'], skiprows=1, comment='#')
     return df
 
