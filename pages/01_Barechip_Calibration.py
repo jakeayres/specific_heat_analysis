@@ -23,8 +23,8 @@ def main():
 
     st.title('Barechip Calibration')
     st.write('A utility for producing the barechip calibration files from current dependent resistance data.')
-    st.code('Inputs: Resistance vs current of a barechip cernox at fixed temperatures. Expects columnar data with "setpoint", "temperature", "current" and "resistance" columns. ', language=None, wrap_lines=True)
-    st.code('Outputs: Resistance vs temperature in the absence of self heating. A barechip calibration file with "temperature" and "resistance" columns', language=None, wrap_lines=True)
+    st.info('Inputs: Resistance vs current of a barechip cernox at fixed temperatures. Expects columnar data with "setpoint", "temperature", "current" and "resistance" columns. ')
+    st.info('Outputs: Resistance vs temperature in the absence of self heating. A barechip calibration file with "temperature" and "resistance" columns')
 
 
     #
